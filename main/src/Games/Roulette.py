@@ -1,0 +1,2 @@
+def roulette():
+    print("roulette")
