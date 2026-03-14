@@ -1,3 +1,9 @@
+# Clear
+
+import os
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 # BLACKJACK
 
 deck = [
@@ -30,3 +36,23 @@ symbols = (
     ['🍋'] * 3 +
     ['🍒'] * 2
 )
+
+# Ask for bet amount
+
+def bet(player_money):
+    print(f"How much money do you want to bet?")
+    print(f"You have {player_money}")
+    bet_amount = input()
+    if bet_amount == "return":
+        return bet_amount
+    else:
+        bet_amount = int(bet_amount)
+        while bet_amount <= 0 or bet_amount > player_money:
+            if bet_amount <= 0:
+                print("Please enter a valid amount")
+                print(f"You have {player_money}")
+            else:
+                print("You don't have enough money")
+                print(f"You have {player_money}")
+            bet_amount = int(input())
+    return bet_amount

@@ -60,8 +60,7 @@ def inicio():
         else:
             print("Unrecognized option")
 
-def limpiar():
-    os.system('cls' if os.name == 'nt' else 'clear')
+
 
 
 
