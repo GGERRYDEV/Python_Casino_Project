@@ -1,5 +1,11 @@
 .venv/
+venv/
+ENV/
 .idea/
 __pycache__/
 *.pyc
-.idea
+*.pyo
+*.pyd
+.DS_Store
+Thumbs.db
+.main.casino.py
