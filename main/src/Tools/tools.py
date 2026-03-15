@@ -24,7 +24,7 @@ colors_roulette = [
     (28, "⬛"), (29, "⬛"), (30, "🟥"), (31, "⬛"), (32, "🟥"), (33, "⬛"), (34, "🟥"), (35, "⬛"), (36, "🟥")
 ]
 
-choices = ["Red", "Black", "Pair", "Odd", "High", "Low", "Green", "Numero"]
+choices = ["Red", "Black", "Even", "Odd", "High", "Low", "Green", "Number", "1 Column", "2 Column", "3 Column"]
 
 # SLOT MACHINE
 
@@ -56,3 +56,9 @@ def bet(player_money):
                 print(f"You have {player_money}")
             bet_amount = int(input())
     return bet_amount
+
+# ASK FOR CONTINUE
+
+def continuee():
+    print("Press any key to continue")
+    input()

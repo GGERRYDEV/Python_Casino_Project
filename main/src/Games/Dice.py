@@ -1,8 +1,8 @@
 from ..Tools.tools import bet
 from ..Tools.tools import clear
+from ..Tools.tools import continuee
 import random
 import time
-
 
 def dice(player_money):
     while player_money > 0:
@@ -27,10 +27,17 @@ def dice(player_money):
                 print(f"You won {won_money}€")
                 print(f"The number was {random_number} and your number was {number_choice}")
                 player_money = won_money + player_money
+                continuee()
             else:
                 print(f"You lost {bet_amount}")
                 print(f"The number was {random_number} and your number was {number_choice}")
                 player_money = player_money - bet_amount
-            time.sleep(2)
+                continuee()
+
             clear()
-    return player_money
+    if player_money == 0:
+        print("You run out of money")
+        time.sleep(1)
+        exit()
+    else:
+        return player_money

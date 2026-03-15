@@ -19,7 +19,7 @@ def start_casino(player_money):
         print("If you want to exit the casino, type 'exit' at any time")
         game_choice = input()
         if game_choice == "1" or game_choice == "Roulette":
-            roulette()
+            player_money = roulette(player_money)
         elif game_choice == "2" or game_choice == "Blackjack":
             blackjack()
         elif game_choice == "3" or game_choice == "Dice":
@@ -27,14 +27,15 @@ def start_casino(player_money):
         elif game_choice == "4" or game_choice == "Slot Machine":
             slot_machine()
         elif game_choice == "5" or game_choice == "Loop":
-             loop()
+            loop()
         elif game_choice == "exit":
             exit()
         else:
             print("Please enter a valid input")
             time.sleep(1)
-
-
+    clear()
+    print("You run out of money")
+    time.sleep(1)
 
 if __name__ == "__main__":
     start_casino(5000)
