@@ -1,2 +1,2 @@
-def blackjack():
+def blackjack(player_money):
     print("blackjack")

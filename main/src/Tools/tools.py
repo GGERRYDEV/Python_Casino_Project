@@ -1,5 +1,5 @@
 # Clear
-
+import random
 import os
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -28,14 +28,37 @@ choices = ["Red", "Black", "Even", "Odd", "High", "Low", "Green", "Number", "1 C
 
 # SLOT MACHINE
 
-symbols = (
-    ['🎃'] * 12 +
-    ['🔔'] * 8 +
-    ['⭐'] * 6 +
-    ['🍉'] * 5 +
-    ['🍋'] * 3 +
-    ['🍒'] * 2
-)
+reel_config = {
+    "💎": 3,
+    "💰": 4,
+    "🔔": 5,
+    "🍇": 7,
+    "🍓": 10,
+    "🍉": 12,
+    "🍎": 13,
+    "🥝": 15,
+    "🍋": 15,
+    "🥦": 20
+}
+
+prizes = {
+    "💎": 100,
+    "💰": 50,
+    "🔔": 20,
+    "🍇": 10,
+    "🍓": 10,
+    "🍉": 5,
+    "🍎": 5,
+    "🥝": 3,
+    "🍋": 3,
+    "🥦": 2
+}
+
+def master_reel_func(master_reel):
+    for symbol, weight in reel_config.items():
+        master_reel.extend([symbol] * weight)
+        random.shuffle(master_reel)
+    return master_reel
 
 # Ask for bet amount
 

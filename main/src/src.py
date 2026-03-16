@@ -6,3 +6,5 @@ from .Games.Slot_machine import slot_machine
 from .Tools.tools import *
 import time
 import random
+import pygame
+import os

@@ -6,7 +6,7 @@ from ..Tools.tools import continuee
 import time
 import random
 
-def spinning():
+def roulette_spinning():
     roulette_number = 0
     roulette_color = ""
     for i in range(36):
@@ -103,7 +103,7 @@ def roulette(player_money):
             print("Unrecognized option")
             time.sleep(1)
             continue
-        roulette_number, roulette_color = spinning()
+        roulette_number, roulette_color = roulette_spinning()
         multiplier = result_roulette(choice, number_choice, roulette_number, roulette_color)
         if multiplier == 0:
             print(f"You lost {bet_amount}!")

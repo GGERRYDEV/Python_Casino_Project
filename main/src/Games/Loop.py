@@ -1,2 +1,2 @@
-def loop():
+def loop(player_money):
     print("loop")
