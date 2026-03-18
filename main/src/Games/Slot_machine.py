@@ -1,15 +1,13 @@
 from ..Tools.tools import master_reel_func
 from ..Tools.tools import clear
-from ..Tools.tools import continuee
 from ..Tools.tools import prizes
-from ..Tools.tools import bet
 import time
 import random
 import pygame
+pygame.mixer.init()
 
 # SPINNING ANIMATION
 def slot_machine_spinning():
-    pygame.mixer.init()
     slot1_mid, slot2_mid, slot3_mid = "", "", ""
     # LOGIC
     spinning_sound = pygame.mixer.Sound("src/Sounds/slot_machine.mp3")
@@ -24,7 +22,7 @@ def slot_machine_spinning():
 
     center = 3
 
-    spinning_sound.play(loops=-1)
+    spinning_sound.play()
 
     for i in range(34):
         clear()
@@ -143,6 +141,15 @@ def slot_machine(player_money):
         if choice == "return":
             return player_money
         elif choice.isdigit():
-            bet_amount = int(choice)
+            if bet_amount <= 0:
+                print("Please enter a valid amount")
+                print(f"You have {player_money}")
+            elif bet_amount > player_money:
+                print("You don't have enough money")
+                print(f"You have {player_money}")
+            elif player_money == 0:
+                return player_money
+            else:
+                bet_amount = int(choice)
 
     return player_money

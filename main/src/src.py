@@ -4,6 +4,7 @@ from .Games.Loop import loop
 from .Games.Roulette import roulette
 from .Games.Slot_machine import slot_machine
 from .Tools.tools import *
+from .Games.horse_racing import horse_racing
 import time
 import random
 import pygame

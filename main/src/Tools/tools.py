@@ -26,6 +26,12 @@ colors_roulette = [
 
 choices = ["Red", "Black", "Even", "Odd", "High", "Low", "Green", "Number", "1 Column", "2 Column", "3 Column"]
 
+def master_reel_func(master_reel):
+    for symbol, weight in reel_config.items():
+        master_reel.extend([symbol] * weight)
+        random.shuffle(master_reel)
+    return master_reel
+
 # SLOT MACHINE
 
 reel_config = {
@@ -53,12 +59,6 @@ prizes = {
     "🍋": 3,
     "🥦": 2
 }
-
-def master_reel_func(master_reel):
-    for symbol, weight in reel_config.items():
-        master_reel.extend([symbol] * weight)
-        random.shuffle(master_reel)
-    return master_reel
 
 # Ask for bet amount
 

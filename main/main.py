@@ -1,7 +1,7 @@
 # Import libraries
 
-from src.Games.horse_racing import horse_racing
 from src.src import *
+pygame.mixer.init()
 
 # Start the game
 
@@ -37,9 +37,11 @@ def start_casino(player_money):
         else:
             print("Please enter a valid input")
             time.sleep(1)
+    game_over = pygame.mixer.Sound("src/Sounds/game_over.mp3")
+    game_over.play()
     clear()
     print("You run out of money")
-    time.sleep(1)
+    time.sleep(2)
 
 if __name__ == "__main__":
     start_casino(5000)

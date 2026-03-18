@@ -5,17 +5,22 @@ from ..Tools.tools import choices
 from ..Tools.tools import continuee
 import time
 import random
+import pygame
+pygame.mixer.init()
 
 def roulette_spinning():
+    roulette_sound = pygame.mixer.Sound("src/Sounds/roulette_spinning.mp3")
+    roulette_sound.play()
     roulette_number = 0
     roulette_color = ""
     for i in range(36):
         clear()
         roulette_number, roulette_color = random.choice(colors_roulette)
-        print("🎰Spinning...🎰")
-        print(f"🎲 {roulette_number} {roulette_color} 🎲")
-        time.sleep(i * 0.005)
-    return roulette_number, roulette_color
+        print(" |🛞 Spinning 🛞|")
+        print(f" | {str(roulette_number).center(5)} {roulette_color.center(5)} | ")
+        time.sleep(0.07 + i * 0.005)
+    roulette_sound.stop()
+    return int(roulette_number), roulette_color
 
 def result_roulette(choice, number_choice, roulette_number, roulette_color):
 
@@ -106,9 +111,13 @@ def roulette(player_money):
         roulette_number, roulette_color = roulette_spinning()
         multiplier = result_roulette(choice, number_choice, roulette_number, roulette_color)
         if multiplier == 0:
+            lose_sound = pygame.mixer.Sound("src/Sounds/lose_roulette.mp3")
+            lose_sound.play()
             print(f"You lost {bet_amount}!")
             player_money = player_money - bet_amount
         else:
+            win_sound = pygame.mixer.Sound("src/Sounds/win_roulette.mp3")
+            win_sound.play()
             print(f"You won {bet_amount * multiplier}!")
             player_money = player_money - bet_amount
             player_money = player_money + bet_amount * multiplier
