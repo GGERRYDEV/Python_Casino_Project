@@ -77,7 +77,6 @@ def roulette(player_money):
     while player_money > 0:
         clear()
         print("Welcome to the Roulette!")
-        print(f"You have {player_money}")
         print("You can choose between:")
         print("If you want to return to the main menu write return")
         print("Number (X36)")

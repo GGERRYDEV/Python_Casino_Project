@@ -68,6 +68,16 @@ def bet(player_money):
     bet_amount = input()
     if bet_amount == "return":
         return bet_amount
+    elif bet_amount == "":
+        bet_amount = 0
+        while bet_amount <= 0 or bet_amount > player_money:
+            if bet_amount <= 0:
+                print("Please enter a valid amount")
+                print(f"You have {player_money}")
+            else:
+                print("You don't have enough money")
+                print(f"You have {player_money}")
+            bet_amount = int(input())
     else:
         bet_amount = int(bet_amount)
         while bet_amount <= 0 or bet_amount > player_money:

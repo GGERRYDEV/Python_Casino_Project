@@ -94,7 +94,6 @@ def slot_machine(player_money):
     clear()
     print("Welcome to the Slot Machine!")
     print("Write return to go back to the main menu.")
-    print(f"You have {player_money}")
     print("We have these prizes:")
     print("💎💎💎 (X100)")
     print("💰💰💰 (X50)")
@@ -141,6 +140,7 @@ def slot_machine(player_money):
         if choice == "return":
             return player_money
         elif choice.isdigit():
+            new_bet = int(choice)
             if bet_amount <= 0:
                 print("Please enter a valid amount")
                 print(f"You have {player_money}")
@@ -150,6 +150,6 @@ def slot_machine(player_money):
             elif player_money == 0:
                 return player_money
             else:
-                bet_amount = int(choice)
+                bet_amount = new_bet
 
     return player_money

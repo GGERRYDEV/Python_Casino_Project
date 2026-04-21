@@ -62,6 +62,7 @@ def blackjack_values(player_deck, dealer_deck, hide):
         return False, value_dealer_deck, value_player_deck
 
 def blackjack(player_money):
+    hit = pygame.mixer.Sound("src/Sounds/hit.mp3")
     clear()
     print("Welcome to the Blackjack!")
     bet_amount = bet(player_money)
@@ -79,7 +80,6 @@ def blackjack(player_money):
             print("[H]it or [S]tand?")
             choice = input()
             if choice == "H":
-                hit = pygame.mixer.Sound("src/Sounds/hit.mp3")
                 hit.play()
                 clear()
                 player_deck.append(random.choice(deck))
