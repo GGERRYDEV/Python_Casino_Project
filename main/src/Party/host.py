@@ -2,7 +2,6 @@ import socket
 import threading
 import time
 import os
-from ..Tools.tools import clear
 players = {}
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,7 +36,6 @@ def waiting():
         number_players += 1
         print(f"{received_message} connected")
         threading.Thread(target=chat, args=(conexion,)).start()
-    clear()
     print("All the players connected, starting the game")
     
 def chat(conexion):

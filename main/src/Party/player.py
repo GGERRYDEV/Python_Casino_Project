@@ -2,7 +2,6 @@ import socket
 import threading
 import time
 import os
-from ..Tools.tools import clear
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -13,7 +12,6 @@ client.connect((ip, 5555))
 question = client.recv(1024).decode('utf-8')
 name = input(f"{question}\n")
 client.send(name.encode('utf-8'))
-clear()
 
 def receive_message():
     while True:
