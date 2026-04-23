@@ -1,157 +1,159 @@
 import time
 import os
 import random
-import socket
-import threading
-import os
+import json
 
-def clear():
-    os.system('cls' if os.name == 'nt' else 'clear')
-
+# GAME SETUP
 deck = [
     "2♥️", "3♥️", "4♥️", "5♥️", "6♥️", "7♥️", "8♥️", "9♥️", "10♥️", "J♥️", "Q♥️", "K♥️", "A♥️",
     "2♦️", "3♦️", "4♦️", "5♦️", "6♦️", "7♦️", "8♦️", "9♦️", "10♦️", "J♦️", "Q♦️", "K♦️", "A♦️",
     "2♠️", "3♠️", "4♠️", "5♠️", "6♠️", "7♠️", "8♠️", "9♠️", "10♠️", "J♠️", "Q♠️", "K♠️", "A♠️",
     "2♣️", "3♣️", "4♣️", "5♣️", "6♣️", "7♣️", "8♣️", "9♣️", "10♣️", "J♣️", "Q♣️", "K♣️", "A♣️"
 ]
+
 card_values = {
     "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10,
     "J": 11, "Q": 12, "K": 13, "A": 14
 }
-card_suits = {
-    "♥️": "hearts",
-    "♦️": "diamonds",
-    "♠️": "spades",
-    "♣️": "clubs"
-}
 
-def setup_game(players, conexion):
-    clear()
-    random.shuffle(deck)
-    print("Welcome to Poker!")
-    middle_deck = []
-    for i in range(5):
-        middle_deck.append(deck.pop())
-    print("The middle cards are:")
-    print(middle_deck)
-    time.sleep(2)
-    for b in range(players):
-        player_deck = []
-        for i in range(2):
-            player_deck.append(deck.pop())
-        print(f"Player {b + 1} your cards are:")
-        print(player_deck)
-        time.sleep(2)
-    detect_hand(player_deck, middle_deck)
+# --- GAME ENGINE FUNCTIONS ---
+
+def start_deal(players):
+    """Shuffles and deals 2 cards to each player and prepares the board."""
+    current_deck = deck[:] 
+    random.shuffle(current_deck)
+    print("Deck shuffled!")
+
+    # Prepare 5 cards for the community board
+    middle_deck = [current_deck.pop() for _ in range(5)]
+
+    # Deal private hands
+    for conexion in players:
+        card1 = current_deck.pop()
+        card2 = current_deck.pop()
+        players[conexion]["deck"] = [card1, card2]
+        
+        data = {
+            "type": "HAND",
+            "player_name": players[conexion]['name'],
+            "cards": [card1, card2],
+            "message": f"You received {card1} and {card2}"
+        }
+        
+        message_json = json.dumps(data) + "\n"
+        conexion.send(message_json.encode('utf-8'))
+    
+    return players, middle_deck
+
+def update_board(players, middle_deck, round_level):
+    """Sends the current community cards (Flop, Turn, River) to all players."""
+    cards_to_show = [3, 4, 5]
+    visible_cards = middle_deck[:cards_to_show[round_level]]
+    
+    data = {
+        "type": "UPDATE_BOARD",
+        "cards": visible_cards,
+        "round": round_level
+    }
+    
+    msg = (json.dumps(data) + "\n").encode('utf-8')
+    for conn in players:
+        conn.send(msg)
+
+# --- HAND DETECTION LOGIC ---
 
 def detect_hand(player_deck, middle_deck):
+    """Analyzes 2 private cards + current board cards to find the best hand."""
+    if not middle_deck:
+        return "High_Card", 0
+
     full_deck = player_deck + middle_deck
-    hand_values = []
-    hand_suits = []
+    hand_suits = [card[-2:] for card in full_deck]
     processed_cards = []
+    
     for card in full_deck:
         value_text = card[:-2]
         suit = card[-2:]
-        hand_values.append(value_text)
-        hand_suits.append(suit)
-        value_number = card_values[value_text]
-        processed_cards.append([value_number, suit])
+        processed_cards.append([card_values[value_text], suit])
+    
     processed_cards.sort()
-    processed_cards_values = []
-    processed_cards_suits = []
-    processed_cards_values = []
-    for cards in processed_cards:
-        processed_cards_values.append(cards[0])
-    processed_cards_values_unic = list(set(processed_cards_values))
-    processed_cards_values_unic.sort()
-    # ROYAL FLUSH
-    
-    for suit in hand_suits:
-        if f"A{suit}" in full_deck and f"K{suit}" in full_deck and f"Q{suit}" in full_deck and f"J{suit}" in full_deck and f"10{suit}" in full_deck:
-            print("Player has a royal flush!")
-            return "Royal_Flush"
-        
-    # STRAIGHT FLUSH
-    
+    processed_cards_values = [card[0] for card in processed_cards]
+    processed_cards_values_unic = sorted(list(set(processed_cards_values)))
+
+    # 1. ROYAL FLUSH
     for suit in set(hand_suits):
-        numbers_of_suit = [] 
-        
-        for card in processed_cards:
-            if card[1] == suit:
-                numbers_of_suit.append(card[0])
-                
-        if len(numbers_of_suit) >= 5:
-            numbers_of_suits_unic = list(set(numbers_of_suit))
-            numbers_of_suits_unic.sort() 
-            
-            for number in numbers_of_suits_unic:
-                if (number + 1) in numbers_of_suits_unic and (number + 2) in numbers_of_suits_unic and (number + 3) in numbers_of_suits_unic and (number + 4) in numbers_of_suits_unic:
-                    print("Player has a straight flush!")
-                    return "Straight_Flush"
-    
-    # POKER
-    
-    for vaule in set(hand_values):
-        if hand_values.count(vaule) == 4:
-            print("Player has a poker")
-            return "Poker"
-        
-    # FULL HOUSE and detecting trios and pairs
+        royal_values = [10, 11, 12, 13, 14]
+        if all([val, suit] in processed_cards for val in royal_values):
+            return "Royal_Flush", 14
 
-    trios = 0
-    pairs = 0
-    processed_cards_values = []
-    for cards in processed_cards:
-        processed_cards_values.append(cards[0])
-    for number in set(processed_cards_values):
-        quantity = processed_cards_values.count(number)
+    # 2. STRAIGHT FLUSH
+    for suit in set(hand_suits):
+        suit_nums = sorted([c[0] for c in processed_cards if c[1] == suit])
+        if len(suit_nums) >= 5:
+            for i in range(len(suit_nums) - 4):
+                if suit_nums[i+4] == suit_nums[i] + 4:
+                    return "Straight_Flush", suit_nums[i+4]
+
+    # 3. POKER (Four of a Kind)
+    for value in set(processed_cards_values):
+        if processed_cards_values.count(value) == 4:
+            return "Poker", value
         
-        if quantity == 3:
-            trios += 1
-        elif quantity == 2:
-            pairs += 1
+    # 4. TRIOS AND PAIRS COUNTER
+    trios = [v for v in set(processed_cards_values) if processed_cards_values.count(v) == 3]
+    pairs = [v for v in set(processed_cards_values) if processed_cards_values.count(v) == 2]
+    trios.sort(reverse=True)
+    pairs.sort(reverse=True)
 
-    if (trios == 1 and pairs >= 1) or (trios == 2):
-        print("Player has a full house!")
-        return "Full_House"
-    
-    # FLUSH
+    # 5. FULL HOUSE
+    if (trios and pairs) or len(trios) > 1:
+        return "Full_House", trios[0]
 
+    # 6. FLUSH
     for suit in set(hand_suits):
         if hand_suits.count(suit) >= 5:
-            print("Player has a flush!")
-            return "Flush"
-        
-    # STRAIGHT
+            flush_cards = [c[0] for c in processed_cards if c[1] == suit]
+            return "Flush", max(flush_cards)
 
-    for number in processed_cards_values_unic:
-        if (number + 1) in processed_cards_values_unic and (number + 2) in processed_cards_values_unic and (number + 3) in processed_cards_values_unic and (number + 4) in processed_cards_values_unic:
-            print("Player has a straight!")
-            return "Straight"
-        
-    # TRIO 
+    # 7. STRAIGHT
+    for i in range(len(processed_cards_values_unic) - 1, 3, -1):
+        if processed_cards_values_unic[i] == processed_cards_values_unic[i-4] + 4:
+            return "Straight", processed_cards_values_unic[i]
 
-    if trios >= 1:
-        print("Player has a trio")
-        return "Trio"
-    
-    # DOUBLE PAIR
+    # 8. THREE OF A KIND
+    if trios:
+        return "Three_of_a_Kind", trios[0]
 
-    if pairs >= 2:
-        print("Player has a double pair")
-        return 'Double_Pair'
-    
-    # PAIR
+    # 9. TWO PAIR
+    if len(pairs) >= 2:
+        return "Two_Pair", pairs[0] 
 
-    if pairs == 1:
-        print('Player has a pair')
-        return 'Pair'
-    
-    # HIGH CARD
+    # 10. PAIR
+    if pairs:
+        return "Pair", pairs[0]
 
-    high_card = processed_cards_values_unic[-1]
-    print(high_card)
-    print('The player has a high card')
-    return 'High_Card'
+    # 11. HIGH CARD
+    return "High_Card", processed_cards_values_unic[-1]
 
-setup_game(1, None)
+# --- WINNER CALCULATION ---
+
+hand_rankings = {
+    "Royal_Flush": 10,
+    "Straight_Flush": 9,
+    "Poker": 8,
+    "Full_House": 7,
+    "Flush": 6,
+    "Straight": 5,
+    "Three_of_a_Kind": 4,
+    "Two_Pair": 3,
+    "Pair": 2,
+    "High_Card": 1
+}
+
+def winer(player_results):
+    """Sorts players by hand rank, then high card value, and returns the winner."""
+    # player_results: [("Pair", 14, "Name"), ...]
+    player_results.sort(key=lambda x: (hand_rankings.get(x[0], 0), x[1]), reverse=True)
+    winner = player_results[0]
+    print(f"\n🏆 THE WINNER IS: {winner[2]} with a {winner[0].replace('_', ' ')}!")
+    return winner

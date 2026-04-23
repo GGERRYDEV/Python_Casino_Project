@@ -15,8 +15,8 @@ def start_casino(player_money):
         print("2. Blackjack")
         print("3. Dice")
         print("4. Slot Machine")
-        print("5. Horse Racing")
-        print("6. Loop ( For loop games ).")
+        print("5. Horse Racing (Not implemented yet)")
+        print("6. Party ( For play with friends ).")
         print("You can choose the game with the number or the name of the game")
         print("If you want to exit the casino, type 'exit' at any time")
         game_choice = input()
@@ -30,8 +30,8 @@ def start_casino(player_money):
             player_money = slot_machine(player_money)
         elif game_choice == "5" or game_choice == "Horse Racing":
             player_money = horse_racing(player_money)
-        elif game_choice == "6" or game_choice == "Loop":
-            player_money = loop(player_money)
+        elif game_choice == "6" or game_choice == "Party":
+            player_money = party(player_money)
         elif game_choice == "exit":
             exit()
         else:
