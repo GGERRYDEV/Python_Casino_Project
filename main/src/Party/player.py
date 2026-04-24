@@ -6,7 +6,7 @@ import json
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# IP Setup - Change to the Host's IP if not playing on the same machine
+# IP Setup - Change to the Host's IP if needed
 ip = "127.0.0.1" 
 try:
     client.connect((ip, 5555))
@@ -35,58 +35,58 @@ def receive_message():
                 
                 data = json.loads(msg)
                 
-                # --- CLEAR AND RE-DRAW INTERFACE ---
+                # --- CLEAR SCREEN ---
                 os.system('cls' if os.name == 'nt' else 'clear')
                 
-                # 1. SPECIAL CASE: GAME OVER
+                # 1. SPECIAL CASE: GAME OVER (WINNER ANNOUNCEMENT)
                 if data["type"] == "GAME_OVER":
                     print("\n" + "🏆" * 20)
                     print(f"  WINNER: {data['winner_name'].upper()}")
                     print(f"  HAND:   {data['winner_hand'].replace('_', ' ')}")
                     print("🏆" * 20)
-                    input("\nPress Enter to continue...")
+                    input("\nPress Enter to start a new round...")
                     continue
 
-                # --- 2. REGULAR INTERFACE DRAWING ---
-                print("="*50)
+                # --- 2. MAIN INTERFACE DRAWING ---
+                print("="*55)
                 print(f" PLAYER: {name.upper()} | BALANCE: ${data.get('money', '---')}")
-                print("="*50)
+                print(f" TOTAL POT: ${data.get('pot', 0)}")
+                print("="*55)
                 
-                # Handle Board display
                 board = data.get("board", [])
-                if data["type"] == "UPDATE_BOARD": 
-                    board = data.get("cards", [])
-                print(f"\n BOARD: {' | '.join(board) if board else '[ Pre-Flop ]'}")
+                print(f"\n COMMUNITY CARDS: {' | '.join(board) if board else '[ Pre-Flop ]'}")
                 
-                # Handle Private Hand display
                 hand = data.get("hand", [])
-                if data["type"] == "HAND": 
-                    hand = data.get("cards", [])
                 if hand:
                     print(f" YOUR HAND: {hand[0]}  {hand[1]}")
                 
-                # Show current hand strength (e.g., Pair, Trio, Flush)
                 if "current_hand_type" in data:
-                    print(f" STRENGTH:  {data['current_hand_type'].replace('_', ' ')}")
+                    print(f" CURRENT RANK: {data['current_hand_type'].replace('_', ' ')}")
                 
-                print("-" * 50)
+                print("-" * 55)
 
-                # --- 3. INPUT LOGIC ---
+                # --- 3. PLAYER ACTIONS ---
                 
-                # Normal Turn
                 if data["type"] == "ACTION_REQUIRED":
-                    print(f"\n[!] {data['message']}")
+                    to_call = data.get('to_call', 0)
+                    if to_call > 0:
+                        print(f"[!] You must bet ${to_call} to stay in (Call/Raise).")
+                    else:
+                        print("[!] No active bets. You can Check for free.")
+
+                    print(f"\n[TURN] {data.get('message', 'It is your turn')}")
                     choice = input(">> Action (Check/Raise/Fold): ").strip().lower()
                     client.send((json.dumps({"action": choice}) + "\n").encode('utf-8'))
-                
-                # Asking for specific Raise amount
+
                 elif data["type"] == "ASK_AMOUNT":
-                    print(f"\n[?] {data['message']}")
-                    amount = input(">> Enter amount to raise: ")
-                    # If user enters nothing or non-digit, default to 0 to avoid crash
-                    if not amount.isdigit():
+                    print(f"\n[?] {data.get('message', 'How much do you want to raise?')}")
+                    amount = input(">> Extra amount to add: ")
+                    if not amount.isdigit(): 
                         amount = "0"
                     client.send((json.dumps({"amount": amount}) + "\n").encode('utf-8'))
+
+                elif data["type"] == "WAIT_TURN":
+                    print("\n[WAITING] Other player is acting. Screen will update soon...")
 
         except Exception as e:
             print(f"\nError receiving data: {e}")

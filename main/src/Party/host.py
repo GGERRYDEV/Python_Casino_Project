@@ -3,8 +3,7 @@ import threading
 import time
 import os
 import json
-# Assuming your folder structure allows these relative imports
-from .poker import start_deal, update_board, winer, detect_hand
+from poker import start_deal, update_board, winer, detect_hand
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -21,19 +20,39 @@ def get_ip():
     except Exception:
         return "127.0.0.1"
 
+def broadcast_status(players, board, pot):
+    """Update all players' screens simultaneously."""
+    for conn in players:
+        # We check the strength for each specific player
+        hand_type, _ = detect_hand(players[conn]["deck"], board)
+        data = {
+            "type": "WAIT_TURN", 
+            "hand": players[conn]["deck"],
+            "board": board,
+            "current_hand_type": hand_type,
+            "money": players[conn]["money"],
+            "pot": pot
+        }
+        try:
+            conn.send((json.dumps(data) + "\n").encode('utf-8'))
+        except:
+            pass
+
 def waiting():
     players = {}
     ip = get_ip()
-    print(f"Your IP is: {ip}")
-    message = "What's your name?"
-    print("How many players are going to play?")
-    max_number_players = int(input())
+    print(f"Server started at: {ip}:5555")
+    print("How many players for this session?")
+    try:
+        max_number_players = int(input(">> "))
+    except ValueError:
+        max_number_players = 2 # Default
+        
     number_players = 0
-    
     while number_players < max_number_players:
         print(f"Waiting for player {number_players + 1}...")
         conexion, address = server.accept()
-        conexion.send(message.encode('utf-8'))
+        conexion.send("What's your name?".encode('utf-8'))
         received_message = conexion.recv(1024).decode('utf-8')
         
         players[conexion] = {
@@ -44,89 +63,101 @@ def waiting():
             "folded": False 
         }
         number_players += 1
-        print(f"{received_message} connected")
+        print(f"Player '{received_message}' joined the table.")
         
-    print("All players connected, starting the game...")
     return players, max_number_players
 
-def betting_round(players, middle_deck, round_level):
-    # Determine community cards based on the round
-    # round_level 0=Flop(3), 1=Turn(4), 2=River(5)
-    cards_to_show_map = [3, 4, 5]
-    cards_on_table = middle_deck[:cards_to_show_map[round_level]]
+def betting_round(players, middle_deck, round_level, pot):
+    cards_map = [3, 4, 5]
+    board = middle_deck[:cards_map[round_level]]
+    highest_bet = 0  
+    player_spent = {conn: 0 for conn in players} 
+    
+    # 1. ROUND ANTE ($100 fee)
+    for conn in players:
+        if not players[conn]["folded"]:
+            players[conn]["money"] -= 100
+            pot += 100
 
-    # High-level logic: Every player gets a turn
-    for conexion in players:
-        if players[conexion].get("folded", False): 
-            continue
+    broadcast_status(players, board, pot)
 
-        # 1. Identify the player's current best hand to help them out
-        hand_type, _ = detect_hand(players[conexion]["deck"], cards_on_table)
+    # 2. BETTING LOOP
+    round_finished = False
+    while not round_finished:
+        round_finished = True 
 
-        # 2. Send current status
-        data = {
-            "type": "ACTION_REQUIRED",
-            "hand": players[conexion]["deck"],
-            "board": cards_on_table,
-            "current_hand_type": hand_type, 
-            "money": players[conexion]["money"],
-            "message": f"Your turn, {players[conexion]['name']}! What's your move?"
-        }
-        conexion.send((json.dumps(data) + "\n").encode('utf-8'))
+        for conn in players:
+            if players[conn]["folded"]: continue
+            
+            to_call = highest_bet - player_spent[conn]
+            # Skip if they already matched the high bet
+            if to_call == 0 and highest_bet > 0:
+                continue
 
-        # 3. Wait for action
-        try:
-            response_raw = conexion.recv(1024).decode('utf-8').strip()
-            if response_raw:
-                resp = json.loads(response_raw.split("\n")[0])
+            # Update everyone's UI before this player's turn
+            broadcast_status(players, board, pot)
+
+            hand_type, _ = detect_hand(players[conn]["deck"], board)
+            data = {
+                "type": "ACTION_REQUIRED",
+                "hand": players[conn]["deck"],
+                "board": board,
+                "current_hand_type": hand_type,
+                "money": players[conn]["money"],
+                "pot": pot,
+                "to_call": to_call,
+                "message": f"To Call: ${to_call} | Round Highest: ${highest_bet}"
+            }
+            conn.send((json.dumps(data) + "\n").encode('utf-8'))
+
+            try:
+                raw_resp = conn.recv(1024).decode('utf-8').strip().split("\n")[0]
+                resp = json.loads(raw_resp)
                 action = resp.get("action", "").lower()
 
-                if action == "raise":
-                    # ASK FOR AMOUNT
-                    ask_amount = {"type": "ASK_AMOUNT", "message": "How much do you want to raise?"}
-                    conexion.send((json.dumps(ask_amount) + "\n").encode('utf-8'))
+                if action == "fold":
+                    players[conn]["folded"] = True
+                
+                elif action in ["check", "call"]:
+                    cost = to_call
+                    players[conn]["money"] -= cost
+                    player_spent[conn] += cost
+                    pot += cost
+
+                elif action == "raise":
+                    conn.send((json.dumps({"type": "ASK_AMOUNT", "message": "Extra amount?"}) + "\n").encode('utf-8'))
+                    amt_raw = conn.recv(1024).decode('utf-8').strip().split("\n")[0]
+                    amt_data = json.loads(amt_raw)
                     
-                    # Receive the specific number
-                    amount_raw = conexion.recv(1024).decode('utf-8').strip()
-                    amount_data = json.loads(amount_raw.split("\n")[0])
-                    raise_value = int(amount_data.get("amount", 0))
+                    # Safety check for non-numeric input
+                    try:
+                        subida = int(amt_data.get("amount", 0))
+                    except ValueError:
+                        subida = 0
+
+                    total_a_pagar = to_call + subida
+                    players[conn]["money"] -= total_a_pagar
+                    player_spent[conn] += total_a_pagar
+                    pot += total_a_pagar
                     
-                    # Subtract money
-                    players[conexion]["money"] -= raise_value
-                    print(f"DEBUG: {players[conexion]['name']} raised ${raise_value}")
-                    
-                elif action == "fold":
-                    players[conexion]["folded"] = True
-                    print(f"DEBUG: {players[conexion]['name']} folded.")
-                else:
-                    print(f"DEBUG: {players[conexion]['name']} chose {action}.")
-        except Exception as e:
-            print(f"Error during betting: {e}")
+                    highest_bet = player_spent[conn] 
+                    round_finished = False # Someone raised, everyone must act again
+            except:
+                pass
+
+    return pot
 
 def start_game():
-    # 1. Setup
     players, max_num = waiting()
-    
-    # 2. Deal
     players, middle_deck = start_deal(players) 
-    
-    # --- ROUND 1: FLOP (3 cards) ---
-    print("\n--- ROUND 1: FLOP ---")
-    update_board(players, middle_deck, 0)
-    betting_round(players, middle_deck, 0)
+    total_pot = 0
 
-    # --- ROUND 2: TURN (4 cards) ---
-    print("\n--- ROUND 2: TURN ---")
-    update_board(players, middle_deck, 1)
-    betting_round(players, middle_deck, 1)
+    # Main Rounds: Flop, Turn, River
+    for i in range(3):
+        total_pot = betting_round(players, middle_deck, i, total_pot)
 
-    # --- ROUND 3: RIVER (5 cards) ---
-    print("\n--- ROUND 3: RIVER ---")
-    update_board(players, middle_deck, 2)
-    betting_round(players, middle_deck, 2)
-    
-    # --- END GAME: WINNER ---
-    print("\nEvaluating final hands...")
+    # FINAL SHOWDOWN
+    print("\nGame Over. Calculating winners...")
     results = []
     for conn in players:
         if not players[conn].get("folded", False):
@@ -134,8 +165,7 @@ def start_game():
             results.append((rank_name, rank_val, players[conn]["name"]))
     
     if results:
-        winner = winer(results) # From poker.py
-        # Send GAME_OVER to everyone with the CORRECT KEYS
+        winner = winer(results) 
         for conn in players:
             msg = {
                 "type": "GAME_OVER",
@@ -144,8 +174,7 @@ def start_game():
             }
             conn.send((json.dumps(msg) + "\n").encode('utf-8'))
     else:
-        print("Everyone folded. No winner.")
+        print("No players left. Pot goes to the house!")
 
-# Start
 if __name__ == "__main__":
     start_game()
