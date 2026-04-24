@@ -79,12 +79,13 @@ def blackjack(player_money):
             print("What do you want to do?")
             print("[H]it or [S]tand?")
             choice = input()
-            if choice == "H":
+            choice.lower()
+            if choice == "h":
                 hit.play()
                 clear()
                 player_deck.append(random.choice(deck))
                 keep_playing, value_dealer_deck, value_player_deck = blackjack_values(player_deck, dealer_deck, hide)
-            elif choice == "S":
+            elif choice == "s":
                 clear()
                 hide = False
                 keep_playing, value_dealer_deck, value_player_deck = blackjack_values(player_deck, dealer_deck, hide)
