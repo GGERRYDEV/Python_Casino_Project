@@ -42,6 +42,7 @@ def waiting():
     players = {}
     ip = get_ip()
     print(f"Server started at: {ip}:5555")
+    print("If you want to connect use 127.0.0.1")
     print("How many players for this session?")
     try:
         max_number_players = int(input(">> "))

@@ -6,8 +6,9 @@ import json
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+print("What's your friend ip?")
 # IP Setup - Change to the Host's IP if needed
-ip = "127.0.0.1" 
+ip = int(input())
 try:
     client.connect((ip, 5555))
 except Exception as e:
